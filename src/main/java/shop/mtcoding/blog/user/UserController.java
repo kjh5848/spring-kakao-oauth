@@ -3,6 +3,7 @@ package shop.mtcoding.blog.user;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import shop.mtcoding.blog._core.utils.ApiUtil;
 
@@ -15,6 +16,13 @@ public class UserController {
     private final HttpSession session;
 
 
+    @GetMapping("/oauth/naver/code/callback")
+    public ResponseEntity<?> oauthNaverCodeCallback(@RequestParam("code") String code) {
+        System.out.println("스프링에서 받은 네이버 코드 : " + code);
+
+        String blogAccessToken = userService.네이버로그인코드방식(code);
+        return ResponseEntity.ok().header("Authorization","Bearer " + blogAccessToken).body(new ApiUtil(null));
+    }
 
     @GetMapping("/oauth/naver/callback")
     public ResponseEntity<?> oauthNaverCallback(@RequestParam("accessToken") String naverAccessToken) {

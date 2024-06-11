@@ -13,6 +13,7 @@ import shop.mtcoding.blog._core.errors.exception.Exception400;
 import shop.mtcoding.blog._core.errors.exception.Exception401;
 import shop.mtcoding.blog._core.errors.exception.Exception404;
 import shop.mtcoding.blog._core.utils.JwtUtil;
+import shop.mtcoding.blog._core.utils.NaverToken;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -22,6 +23,33 @@ import java.util.UUID;
 public class UserService {
 
     private final UserJPARepository userJPARepository;
+    private final NaverToken naverToken;
+
+    public String 네이버로그인코드방식(String code) {
+        RestTemplate restTemplate = new RestTemplate();
+        System.out.println("code = " + code);
+        NaverCodeResponse.TokenDTO naverResponse = naverToken.getNaverToken(code, restTemplate);
+        NaverCodeResponse.NaverUserDTO naverUser = naverToken.getNaveUser(naverResponse.getAccessToken(), restTemplate);
+
+        String username = "naver_" + naverUser.getResponse().getName();
+
+        User userPS = userJPARepository.findByUsername(username)
+                .orElse(null);
+
+        if (userPS != null) {
+            return JwtUtil.create(userPS);
+        } else {
+            User user = User.builder()
+                    .username(username)
+                    .password(UUID.randomUUID().toString())
+                    .email(naverUser.getResponse().getId() + "@nate.com")
+                    .provider("naver")
+                    .build();
+            User returnUser = userJPARepository.save(user);
+            return JwtUtil.create(returnUser);
+        }
+
+    }
 
     public String 로그인(UserRequest.LoginDTO reqDTO) {
         User user = userJPARepository.findByUsernameAndPassword(reqDTO.getUsername(), reqDTO.getPassword())
@@ -132,4 +160,6 @@ public class UserService {
             return JwtUtil.create(returnUser);
         }
     }
+
+
 }
